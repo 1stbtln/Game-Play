@@ -1,0 +1,26 @@
+<!--index.html-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Recorder App</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>GamePlay</h1>
+        <div class="video-container">
+            <video id="video" autoplay></video>
+        </div>
+        <div class="button-container">
+            <button id="startButton" class="button start">Start Recording</button>
+            <button id="stopButton" class="button stop" disabled>Stop Recording</button>
+            <button id="saveButton" class="button save" disabled>Save Recording</button>
+        </div>
+    </div>
+    <script src="renderer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.4/dist/tesseract.min.js"></script>
+</body>
+</html>
+

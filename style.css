@@ -1,0 +1,87 @@
+/* styles.css */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f2f5;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.container {
+    text-align: center;
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    width: 100%;
+}
+
+h1 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    color: #444;
+}
+
+.video-container {
+    margin-bottom: 20px;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+video {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+.button-container {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+}
+
+.button {
+    padding: 15px 25px;
+    margin: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s ease-in-out;
+}
+
+.button.start {
+    background-color: #28a745;
+}
+
+.button.start:hover {
+    background-color: #218838;
+}
+
+.button.stop {
+    background-color: #dc3545;
+}
+
+.button.stop:hover {
+    background-color: #c82333;
+}
+
+.button.save {
+    background-color: #007bff;
+}
+
+.button.save:hover {
+    background-color: #0056b3;
+}
+
+.button:disabled {
+    background-color: #c0c0c0;
+    cursor: not-allowed;
+}
