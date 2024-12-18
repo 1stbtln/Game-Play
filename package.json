@@ -1,20 +1,45 @@
 {
-  "name": "gameplay",
+  "name": "obs-highlight-recorder",
   "version": "1.0.0",
+  "description": "Highlight recorder for OBS",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-builder"
   },
-  "author": "Ethan Wagner",
-  "license": "ISC",
-  "description": "",
-  "devDependencies": {
-    "electron": "^32.1.2"
+  "build": {
+    "appId": "com.obs.highlightrecorder",
+    "productName": "OBS Highlight Recorder",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "node_modules/**/*",
+      "renderer/**/*",
+      "config/**/*",
+      "assets/**/*",
+      "main.js",
+      "obsHandler.js",
+      "triggerDetection.js",
+      "videoEditor.js",
+      "preload.js",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    }
   },
   "dependencies": {
-    "@ffmpeg/ffmpeg": "^0.12.10",
+    "aws-sdk": "^2.1692.0",
     "fluent-ffmpeg": "^2.1.3",
-    "node-tesseract-ocr": "^2.2.1",
-    "tesseract.js": "^5.1.1"
+    "jimp": "^0.16.1",
+    "obs-websocket-js": "^5.0.6",
+    "screenshot-desktop": "^1.15.0",
+    "tesseract.js": "^2.1.1"
+  },
+  "devDependencies": {
+    "electron": "^25.2.0",
+    "electron-builder": "^25.1.8"
   }
 }
