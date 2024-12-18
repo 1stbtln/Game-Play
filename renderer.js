@@ -1,260 +1,119 @@
-const { promises: fsPromises } = require('fs');
-const path = require('path');
-const ffmpeg = require('fluent-ffmpeg');
-const tesseract = require('node-tesseract-ocr');
-const fs = require('fs');
+window.addEventListener('DOMContentLoaded', () => {
+    const electronAPI = window.electronAPI;
+    const obsConfigButton = document.getElementById('obsConfigButton');
+    const configModal = document.getElementById('configModal');
+    const closeConfigModal = document.getElementById('closeConfigModal');
+    const logOutput = document.getElementById('logOutput');
 
-ffmpeg.setFfmpegPath('C:/ffmpeg/ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe');
-
-const startButton = document.getElementById('startButton');
-const stopButton = document.getElementById('stopButton');
-const video = document.querySelector('video');
-
-let mediaStream = null;
-let mediaRecorder = null;
-let recordedChunks = [];
-let recordingSessionActive = false;
-let checkAllowed = true;
-const detectionTimeout = 7000; 
-const bufferDurationMs = 5000; // Maintain a 5-second buffer
-let videoExported = false;
-
-const tempFileListPath = path.join(__dirname, 'temp_frame_list.txt');
-
-const createTempFileList = async () => {
-  await fsPromises.writeFile(tempFileListPath, '', { flag: 'w' });
-  console.log('Temporary file list created at:', tempFileListPath);
-};
-
-createTempFileList();
-
-startButton.addEventListener('click', async () => {
-  try {
-    mediaStream = await navigator.mediaDevices.getDisplayMedia({
-      audio: true,
-      video: {
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
-        frameRate: 30,
-      },
+    obsConfigButton.addEventListener('click', () => {
+        configModal.style.display = 'block';
     });
 
-    video.srcObject = mediaStream;
-    video.onloadedmetadata = () => video.play();
-    console.log('Media stream successfully captured:', mediaStream);
+    closeConfigModal.addEventListener('click', () => {
+        configModal.style.display = 'none';
+    });
 
-    startNewRecordingSession();
-  } catch (e) {
-    console.error('Error accessing media devices:', e);
-    alert('Unable to capture media. Please check your permissions or try again.');
-  }
-});
-
-stopButton.addEventListener('click', async () => {
-  if (!recordingSessionActive) {
-    console.warn('No active recording session to stop.');
-    return;
-  }
-
-  await finalizeCurrentRecording();
-  await concatenateSegments(); // Concatenate all saved clips to create the final highlight montage
-
-  if (mediaStream) {
-    mediaStream.getTracks().forEach((track) => track.stop());
-  }
-
-  startButton.disabled = false;
-  stopButton.disabled = true;
-
-  console.log('Recording session has been stopped and highlight montage created.');
-});
-
-async function startNewRecordingSession() {
-  if (recordingSessionActive) return;
-
-  startButton.disabled = true;
-  stopButton.disabled = false;
-
-  recordedChunks = [];
-
-  const mimeType = 'video/webm; codecs=vp8';
-  mediaRecorder = new MediaRecorder(mediaStream, { mimeType });
-
-  mediaRecorder.ondataavailable = (event) => {
-    if (event.data.size > 0) {
-      recordedChunks.push(event.data);
-      pruneBuffer(); // Limit buffer to last 5 seconds
-    }
-  };
-
-  mediaRecorder.onstop = () => {
-    recordingSessionActive = false;
-  };
-
-  mediaRecorder.start();
-  recordingSessionActive = true;
-  processOcrEverySecond();
-}
-
-function pruneBuffer() {
-  const maxChunks = Math.ceil((bufferDurationMs / 1000) * 30); // Assuming 30fps
-  if (recordedChunks.length > maxChunks) {
-    recordedChunks = recordedChunks.slice(-maxChunks);
-  }
-}
-
-let intervalId = null;
-
-function processOcrEverySecond() {
-  if (intervalId) clearInterval(intervalId);
-
-  intervalId = setInterval(async () => {
-    if (!recordingSessionActive) {
-      clearInterval(intervalId);
-      return;
-    }
-
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const context = canvas.getContext('2d');
-    context.drawImage(video, 0, 0);
-
-    await runOcrOnFrame(canvas);
-  }, 1000);
-}
-
-async function runOcrOnFrame(canvas) {
-  if (!checkAllowed) return;
-
-  try {
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg'));
-    if (!blob) return;
-
-    const arrayBuffer = await blob.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    const options = {
-      lang: 'eng',
-      oem: 1,
-      psm: 3,
-      executablePath: "C:\\Program Files\\Tesseract-OCR\\tesseract.exe",
-    };
-
-    const rawText = await tesseract.recognize(buffer, options);
-    const text = rawText.toLowerCase().replace(/\s+/g, ' ').trim();
-
-    const phrasesToDetect = [
-      "you knocked out",
-      "you knocked",
-      "knocked out",
-      "ouknock",
-      "knock",
-      "you",
-      "out",
-      "kill",
-    ];
-
-    for (const phrase of phrasesToDetect) {
-      if (text.includes(phrase)) {
-        console.log(`Trigger detected for phrase: "${phrase}"`);
-        checkAllowed = false;
-        await saveLastFiveSeconds();
-        startNewRecordingSession();
-
-        setTimeout(() => {
-          checkAllowed = true;
-        }, detectionTimeout);
-
-        break;
-      }
-    }
-  } catch (error) {
-    console.error('Error in OCR processing:', error);
-  }
-}
-
-async function saveLastFiveSeconds() {
-  console.log("Saving last 5 seconds of footage...");
-  const uniqueTimestamp = Date.now();
-  const tempWebmPath = path.join(__dirname, `temp_export_${uniqueTimestamp}.webm`);
-  const tempMp4Path = path.join(__dirname, `temp_export_${uniqueTimestamp}.mp4`);
-
-  // Create a temporary MediaRecorder to finalize properly
-  const tempRecorder = new MediaRecorder(mediaStream, { mimeType: 'video/webm; codecs=vp8' });
-  let tempChunks = [];
-
-  tempRecorder.ondataavailable = (event) => {
-    if (event.data.size > 0) {
-      tempChunks.push(event.data);
-    }
-  };
-
-  tempRecorder.onstop = async () => {
-    const combinedBlob = new Blob(tempChunks, { type: 'video/webm' });
-    const reader = new FileReader();
-
-    reader.onload = async function () {
-      try {
-        const buffer = Buffer.from(new Uint8Array(reader.result));
-        await fsPromises.writeFile(tempWebmPath, buffer);
-
-        if (fs.existsSync(tempMp4Path)) {
-          await fsPromises.unlink(tempMp4Path);
+    window.addEventListener('click', (event) => {
+        if (event.target === configModal) {
+            configModal.style.display = 'none';
         }
+    });
 
-        ffmpeg(tempWebmPath)
-          .output(tempMp4Path)
-          .outputOptions('-preset', 'veryfast', '-movflags', 'faststart', '-y')
-          .on('end', async () => {
-            await fsPromises.appendFile(tempFileListPath, `file '${tempMp4Path}'\n`);
-            console.log('Exported video segment created successfully at:', tempMp4Path);
-          })
-          .on('error', (err) => {
-            console.error('FFmpeg conversion error:', err.message);
-          })
-          .run();
-      } catch (error) {
-        console.error('Error saving footage:', error);
-      }
+    window.appendLog = (message) => {
+        logOutput.value += `${message}\n`;
+        logOutput.scrollTop = logOutput.scrollHeight;
     };
 
-    reader.onerror = (err) => console.error('Error reading Blob:', err);
-    reader.readAsArrayBuffer(combinedBlob);
-  };
+    electronAPI.getConfig().then((config) => {
+        document.getElementById('obsHost').value = config.obs_host || '';
+        document.getElementById('obsPort').value = config.obs_port || '';
+        document.getElementById('obsPassword').value = config.obs_password || '';
+        document.getElementById('triggerPhrases').value = (config.trigger_phrases || []).join(', ');
+        document.getElementById('saveLocation').value = config.save_location || '';
+    });
 
-  tempRecorder.start();
-  setTimeout(() => {
-    tempRecorder.stop();
-  }, 5000); // Record for 5 seconds
+    document.getElementById('saveConfigButton').addEventListener('click', () => {
+        const configData = {
+            obsHost: document.getElementById('obsHost').value,
+            obsPort: document.getElementById('obsPort').value,
+            obsPassword: document.getElementById('obsPassword').value,
+            triggerPhrases: document.getElementById('triggerPhrases').value.split(',').map(phrase => phrase.trim()),
+        };
+        electronAPI.saveConfig(configData).then(() => appendLog("Configuration saved successfully."));
+    });
+
+    document.getElementById('chooseSaveLocation').addEventListener('click', () => {
+        electronAPI.chooseSaveLocation().then((location) => {
+            if (location) {
+                document.getElementById('saveLocation').value = location;
+            }
+        });
+    });
+
+    document.getElementById('connectButton').addEventListener('click', () => {
+        electronAPI.connectOBS().then(() => appendLog("Attempting to connect to OBS..."));
+    });
+
+    document.getElementById('startReplayBufferButton').addEventListener('click', () => {
+        electronAPI.startReplayBuffer().then(() => appendLog("Attempting to start replay buffer..."));
+    });
+
+    document.getElementById('stopDetectionButton').addEventListener('click', () => {
+        electronAPI.stopTriggerDetection().then(() => appendLog("Attempting to stop event detection..."));
+    });
+
+    document.getElementById('startDetectionButton').addEventListener('click', () => {
+        electronAPI.startTriggerDetection().then(() => appendLog("Attempting to start event detection..."));
+    });
+
+    document.getElementById('editVideoButton').addEventListener('click', () => {
+        electronAPI.editVideoWithAudio();
+        appendLog("Compiling highlights...");
+    });
+
+    updateClipsSection();
+});
+
+function updateClipsSection() {
+    const clipsContainer = document.getElementById('clipsContainer');
+    if (!clipsContainer) {
+        console.error("Could not find clips container element.");
+        return;
+    }
+
+    clipsContainer.innerHTML = ''; 
+
+    fetchAllClips().then((clipList) => {
+        clipList.sort((a, b) => b.localeCompare(a));
+        clipList.forEach(clipFileName => {
+            const clipElement = createClipElement(clipFileName);
+            clipsContainer.appendChild(clipElement);
+        });
+    }).catch((error) => {
+        console.error("Error fetching clips:", error);
+    });
 }
 
-async function concatenateSegments() {
-  const outputFilePath = path.join(__dirname, `final_output_${Date.now()}.mp4`);
-  console.log('Running FFmpeg to concatenate exported clips...');
-
-  return new Promise((resolve, reject) => {
-    ffmpeg()
-      .input(tempFileListPath)
-      .inputOptions('-f', 'concat', '-safe', '0')
-      .outputOptions('-c', 'copy')
-      .output(outputFilePath)
-      .on('end', () => {
-        console.log('Final highlight montage created successfully:', outputFilePath);
-        resolve();
-      })
-      .on('error', (err) => {
-        console.error('Error during final video processing:', err.message);
-        reject(err);
-      })
-      .run();
-  });
+async function fetchAllClips() {
+    try {
+        const clipList = await window.electronAPI.getClipList();
+        return clipList.filter(file => file.endsWith('.mp4') || file.endsWith('.mkv'));
+    } catch (error) {
+        console.error('Error fetching clips:', error);
+        return [];
+    }
 }
 
-async function finalizeCurrentRecording() {
-  if (recordingSessionActive && mediaRecorder.state === 'recording') {
-    mediaRecorder.stop();
-  }
-}
+function createClipElement(clipFileName) {
+    const clipDiv = document.createElement('div');
+    clipDiv.classList.add('clip');
+    clipDiv.style.width = '200px';
 
-console.log('Script loaded successfully.');
+    const videoElement = document.createElement('video');
+    videoElement.src = `./clips/${clipFileName}`;
+    videoElement.controls = true;
+    videoElement.style.width = '100%';
+
+    clipDiv.appendChild(videoElement);
+    return clipDiv;
+}
