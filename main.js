@@ -1,290 +1,212 @@
-// main.js
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const { connectToOBS, startReplayBuffer, stopReplayBuffer, startTriggerDetection, stopTriggerDetection } = require('./obsHandler');
-const TriggerDetection = require('./triggerDetection');
-const { concatenateVideos } = require('./videoEditor');
+const OBSWebSocket = require('obs-websocket-js').OBSWebSocket;
 const fs = require('fs');
-
-const configPath = path.join(__dirname, 'config', 'config.json');
-
-let config;
-try {
-    config = require(configPath);
-    if (!config.save_location) {
-        config.save_location = path.join(__dirname, 'renderer', 'clips'); 
-        console.warn('save_location was not defined in the config file. Using default:', config.save_location);
-    }
-} catch (error) {
-    console.error('Failed to load config file:', error);
-    config = {
-        save_location: path.join(__dirname, 'renderer', 'clips') 
-    };
-}
+const { exec } = require('child_process');
+const TriggerDetection = require('./triggerDetection'); // Import OCR detection logic
 
 let mainWindow;
-let triggerDetection;
-let obsInstance = null;
-let isOBSConnected = false;
-let lastSaveTime = 0; 
-const saveCooldown = 7000; 
+let obsClient = null; // OBS WebSocket client
+let isConnectedToOBS = false;
+let triggerDetection = null; // Instance of TriggerDetection for OCR
 
-function createWindow() {
+const config = {
+    obsHost: 'localhost',
+    obsPort: 4455,
+    obsPassword: '',
+};
+
+const clipsDirectory = path.join(__dirname, 'clips');
+
+// Create the main application window
+function createMainWindow() {
     mainWindow = new BrowserWindow({
-        width: 1200,
-        height: 800,
+        width: 800,
+        height: 1200,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             contextIsolation: true,
-            enableRemoteModule: false,
-            nodeIntegration: false,
-            webSecurity: true,
-        }
+        },
     });
 
-    const indexPath = path.join(__dirname, 'renderer', 'index.html');
-    console.log("Attempting to load:", indexPath);
-    mainWindow.loadFile(indexPath).catch((err) => {
-        console.error("Failed to load the index.html file:", err);
-    });
-
-    mainWindow.on('closed', () => {
-        mainWindow = null;
-    });
+    mainWindow.loadFile(path.join(__dirname, 'index.html'));
 }
 
-app.on('ready', createWindow);
-
-app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-        app.quit();
-    }
-});
-
-app.on('activate', () => {
-    if (mainWindow === null) {
-        createWindow();
-    }
-});
-
-ipcMain.handle('get-clip-list', async () => {
-    const fullPath = config.save_location;
+// Connect to OBS
+async function connectToOBS() {
     try {
-        const files = fs.readdirSync(fullPath);
-        return files.filter(file => file.endsWith('.mp4') || file.endsWith('.mkv'));
+        if (!obsClient) obsClient = new OBSWebSocket();
+        await obsClient.connect(`ws://${config.obsHost}:${config.obsPort}`, config.obsPassword);
+        isConnectedToOBS = true;
+
+        console.log('Connected to OBS.');
+        mainWindow.webContents.send('log', 'Successfully connected to OBS.');
     } catch (error) {
-        console.error('Error fetching clips:', error);
-        throw error;
+        console.error('Error connecting to OBS:', error.message);
+        mainWindow.webContents.send('log', `Error connecting to OBS: ${error.message}`);
     }
-});
+}
 
-ipcMain.handle('connectOBS', async () => {
-    try {
-        obsInstance = await connectToOBS();
-        if (obsInstance) {
-            isOBSConnected = true;
-            mainWindow.webContents.send('log', 'Connected to OBS');
-
-            obsInstance.on('ConnectionClosed', () => {
-                console.log("Disconnected from OBS.");
-                mainWindow.webContents.send('log', "Disconnected from OBS.");
-                isOBSConnected = false;
-            });
-        }
-    } catch (error) {
-        mainWindow.webContents.send('log', `Failed to connect to OBS: ${error.message}`);
-    }
-});
-
-ipcMain.handle('startReplayBuffer', async () => {
-    if (!isOBSConnected) {
-        mainWindow.webContents.send('log', 'OBS is not connected. Cannot start replay buffer.');
+// Start the replay buffer
+async function startReplayBuffer() {
+    if (!isConnectedToOBS) {
+        mainWindow.webContents.send('log', 'OBS not connected. Cannot start replay buffer.');
         return;
     }
     try {
-        await startReplayBuffer(obsInstance);
-        mainWindow.webContents.send('log', 'Replay buffer started.');
+        const { outputActive } = await obsClient.call('GetReplayBufferStatus');
+        if (!outputActive) {
+            await obsClient.call('StartReplayBuffer');
+            mainWindow.webContents.send('log', 'Replay buffer started.');
+        } else {
+            mainWindow.webContents.send('log', 'Replay buffer is already active.');
+        }
     } catch (error) {
         mainWindow.webContents.send('log', `Failed to start replay buffer: ${error.message}`);
     }
-});
+}
 
-ipcMain.handle('stopReplayBuffer', async () => {
-    if (!isOBSConnected) {
-        mainWindow.webContents.send('log', 'OBS is not connected. Cannot stop replay buffer.');
+// Save the replay buffer
+async function saveReplayBuffer() {
+    if (!isConnectedToOBS) {
+        mainWindow.webContents.send('log', 'OBS not connected. Cannot save replay buffer.');
         return;
     }
     try {
-        await stopReplayBuffer(obsInstance);
-        mainWindow.webContents.send('log', 'Replay buffer stopped.');
+        const result = await obsClient.call('SaveReplayBuffer');
+        console.log('Replay buffer save result:', result);
+        mainWindow.webContents.send('log', `Replay buffer saved: ${JSON.stringify(result)}`);
     } catch (error) {
-        mainWindow.webContents.send('log', `Failed to stop replay buffer: ${error.message}`);
+        console.error('Failed to save replay buffer:', error.message);
+        mainWindow.webContents.send('log', `Failed to save replay buffer: ${error.message}`);
     }
-});
+}
 
-ipcMain.handle('startTriggerDetection', async () => {
-    if (!isOBSConnected) {
-        mainWindow.webContents.send('log', 'OBS is not connected. Cannot start trigger detection.');
-        return;
+// Start OCR and trigger detection
+function startTriggerDetection() {
+    const triggerPhrases = ['you', 'knocked', 'out', 'knock', 'ou'];
+    if (!triggerDetection) {
+        triggerDetection = new TriggerDetection(triggerPhrases);
+        triggerDetection.on('trigger-detected', async (phrase) => {
+            mainWindow.webContents.send('log', `Trigger detected: "${phrase}". Preparing to save replay buffer...`);
+            console.log('Trigger detected. Saving replay buffer...');
+
+            await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
+            await saveReplayBuffer();
+
+            console.log('Replay buffer saved after detection.');
+        });
+        triggerDetection.start();
+        mainWindow.webContents.send('log', 'Started OCR and trigger detection.');
+        console.log('Started OCR and trigger detection.');
+    } else {
+        mainWindow.webContents.send('log', 'Trigger detection is already running.');
     }
-    try {
-        if (!triggerDetection) {
-            const phrasesToDetect = [
-                "you knocked out",
-                "you knocked",
-                "knocked out",
-                "ouknock",
-                "knock",
-                "you",
-                "out",
-                "kill",
-            ];
+}
 
-            triggerDetection = new TriggerDetection(phrasesToDetect);
-            triggerDetection.on('trigger-detected', handleTriggerDetected);
-            triggerDetection.start();
-            mainWindow.webContents.send('log', 'Event detection started successfully.');
-        }
-    } catch (error) {
-        mainWindow.webContents.send('log', `Error starting event detection: ${error.message}`);
-    }
-});
-
-ipcMain.handle('stopTriggerDetection', async () => {
+// Stop OCR and trigger detection
+function stopTriggerDetection() {
     if (triggerDetection) {
         triggerDetection.stop();
         triggerDetection = null;
-        mainWindow.webContents.send('log', 'Event detection stopped.');
-    }
-});
-
-ipcMain.handle('saveConfig', async (event, configData) => {
-    console.log("Received configuration data:", configData);
-    config.obs_host = configData.obsHost;
-    config.obs_port = configData.obsPort;
-    config.obs_password = configData.obsPassword;
-    config.save_location = configData.saveLocation || config.save_location;
-
-    try {
-        fs.writeFileSync(configPath, JSON.stringify(config, null, 4));
-        console.log("Configuration saved successfully.");
-        mainWindow.webContents.send('log', 'Configuration saved successfully.');
-    } catch (error) {
-        console.error("Failed to save configuration:", error);
-        mainWindow.webContents.send('log', `Failed to save configuration: ${error.message}`);
-    }
-});
-
-async function handleTriggerDetected(phrase) {
-    const currentTime = Date.now();
-    if (currentTime - lastSaveTime < saveCooldown) {
-        console.log('Cooldown period active. Skipping save.');
-        mainWindow.webContents.send('log', 'Cooldown period active. Skipping save.');
-        return;
-    }
-    lastSaveTime = currentTime;
-
-    console.log(`Trigger detected: ${phrase}`);
-    mainWindow.webContents.send('log', `Trigger detected: ${phrase}`);
-    const clipPath = await saveReplayBuffer();
-    if (clipPath) {
-        console.log(`Replay buffer saved at: ${clipPath}`);
-        mainWindow.webContents.send('log', `Replay buffer saved at: ${clipPath}`);
-        await appendToClipList(clipPath);
+        mainWindow.webContents.send('log', 'Stopped OCR and trigger detection.');
+        console.log('Stopped OCR and trigger detection.');
     } else {
-        console.error("Failed to save replay buffer: empty clip path.");
-        mainWindow.webContents.send('log', "Failed to save replay buffer: empty clip path.");
+        mainWindow.webContents.send('log', 'Trigger detection was not running.');
     }
 }
 
-async function saveReplayBuffer() {
-    if (!isOBSConnected) {
-        console.error("OBS is not connected. Cannot save replay buffer.");
-        mainWindow.webContents.send('log', 'OBS is not connected. Cannot save replay buffer.');
-        return null;
-    }
+// Montageify clips
+ipcMain.handle('montageifyClips', async () => {
     try {
-        const response = await obsInstance.call('SaveReplayBuffer');
-        if (response && response.outputPath) {
-            const outputPath = response.outputPath;
+        const files = fs.readdirSync(clipsDirectory).filter(file => file.endsWith('.mp4') || file.endsWith('.mkv'));
 
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const stats = fs.statSync(outputPath);
-            if (stats.size === 0) {
-                console.error("Replay buffer file is empty. OBS may have failed to write the replay.");
-                mainWindow.webContents.send('log', "Replay buffer file is empty. OBS may have failed to write the replay.");
-                return null;
-            }
-
-            console.log("Replay buffer saved at:", outputPath);
-            return outputPath;
-        } else {
-            console.warn('SaveReplayBuffer command did not return an output path.');
-            mainWindow.webContents.send('log', 'SaveReplayBuffer command did not return an output path.');
-            return null;
-        }
-    } catch (error) {
-        console.error("Failed to save replay buffer:", error);
-        mainWindow.webContents.send('log', `Failed to save replay buffer: ${error.message}`);
-        return null;
-    }
-}
-
-async function appendToClipList(clipPath) {
-    if (!config.save_location) {
-        console.error('save_location is not defined in the configuration.');
-        mainWindow.webContents.send('log', 'Error: save_location is not defined in the configuration.');
-        return;
-    }
-    const clipListPath = path.join(config.save_location, 'clip_list.txt');
-    try {
-        fs.appendFileSync(clipListPath, `${clipPath}\n`);
-        console.log("Clip path written to clip list.");
-        mainWindow.webContents.send('log', "Clip path written to clip list.");
-    } catch (error) {
-        console.error(`Failed to append clip path to clip list: ${error}`);
-        mainWindow.webContents.send('log', `Failed to append clip path to clip list: ${error}`);
-    }
-}
-
-ipcMain.on('edit-video-with-audio', async () => {
-    if (!config.save_location) {
-        mainWindow.webContents.send('log', 'Error: save_location is not defined in the configuration.');
-        console.error('save_location is not defined in the configuration.');
-        return;
-    }
-    const clipListPath = path.join(config.save_location, 'clip_list.txt');
-    const clipsDir = config.save_location;
-    const outputVideoPath = path.join(clipsDir, 'final_highlight.mp4');
-    const audioPath = path.join(__dirname, 'assets', 'Martial.mp3');
-
-    try {
-        const clipList = fs.readFileSync(clipListPath, 'utf8').split('\n').filter(Boolean);
-        if (clipList.length === 0) {
-            console.error('No clips found to concatenate.');
-            mainWindow.webContents.send('log', 'No clips found to concatenate.');
+        if (files.length === 0) {
+            mainWindow.webContents.send('log', 'No clips found to montage.');
             return;
         }
 
-        console.log('Concatenating videos...');
-        mainWindow.webContents.send('log', 'Concatenating videos...');
-        concatenateVideos(clipList, outputVideoPath, audioPath);
+        // Generate the input file list for FFmpeg
+        const listFilePath = path.join(clipsDirectory, 'file_list.txt');
+        const fileList = files.map(file => `file '${path.join(clipsDirectory, file)}'`).join('\n');
+
+        // Write to file_list.txt
+        fs.writeFileSync(listFilePath, fileList);
+        console.log(`Created list file at: ${listFilePath}`);
+
+        const outputFilePath = path.join(clipsDirectory, 'montage.mp4');
+        const audioFilePath = path.join(clipsDirectory, 'assets', 'Martial.mp3');
+
+        // FFmpeg command to concatenate clips and add audio
+        const ffmpegCommand = `ffmpeg -f concat -safe 0 -i "${listFilePath}" -i "${audioFilePath}" -map 0:v:0 -map 1:a:0 -shortest -c:v copy -c:a aac "${outputFilePath}"`;
+
+        console.log('Executing FFmpeg command:', ffmpegCommand);
+
+        exec(ffmpegCommand, (error, stdout, stderr) => {
+            if (error) {
+                console.error('FFmpeg error during montage creation:', error.message);
+                mainWindow.webContents.send('log', `Error creating montage: ${error.message}`);
+                return;
+            }
+
+            console.log('FFmpeg stdout:', stdout);
+            console.log('FFmpeg stderr:', stderr);
+
+            if (fs.existsSync(outputFilePath)) {
+                mainWindow.webContents.send('log', 'Montage with audio created successfully!');
+                console.log('Montage with audio created successfully.');
+            } else {
+                mainWindow.webContents.send('log', 'FFmpeg completed but no montage.mp4 file was found.');
+                console.error('FFmpeg completed but no montage file found.');
+            }
+        });
     } catch (error) {
-        console.error('Failed to edit video with audio:', error);
-        mainWindow.webContents.send('log', `Failed to edit video with audio: ${error.message}`);
+        console.error('Error in montageifyClips:', error.message);
+        mainWindow.webContents.send('log', `Error in montageifyClips: ${error.message}`);
     }
+});
+
+// IPC Handlers
+ipcMain.handle('saveConfig', (_, newConfig) => {
+    Object.assign(config, newConfig);
+    console.log('Configuration updated:', config);
+});
+
+ipcMain.handle('connectOBS', async () => {
+    await connectToOBS();
+});
+
+ipcMain.handle('startReplayBuffer', async () => {
+    await startReplayBuffer();
+});
+
+ipcMain.handle('saveReplayBuffer', async () => {
+    await saveReplayBuffer();
+});
+
+ipcMain.handle('startTriggerDetection', () => {
+    startTriggerDetection();
+});
+
+ipcMain.handle('stopTriggerDetection', () => {
+    stopTriggerDetection();
+});
+
+ipcMain.handle('getClipList', async () => {
+    try {
+        return fs.readdirSync(clipsDirectory).filter(file => file.endsWith('.mp4') || file.endsWith('.mkv'));
+    } catch (error) {
+        console.error('Error fetching clips:', error);
+        return [];
+    }
+});
+
+app.on('ready', () => {
+    createMainWindow();
 });
 
 app.on('window-all-closed', () => {
-    console.log('All windows are closed, app will exit.');
     if (process.platform !== 'darwin') {
         app.quit();
-    }
-});
-
-process.on('uncaughtException', (err) => {
-    console.error('An uncaught error occurred:', err);
-    if (mainWindow && mainWindow.webContents) {
-        mainWindow.webContents.send('error', err.toString());
     }
 });
