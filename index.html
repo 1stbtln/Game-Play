@@ -3,70 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Game Highlight Pro</title>
+    <title>OBS Highlight Test</title>
     <link rel="stylesheet" href="style.css">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; media-src 'self' blob:;">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <nav class="top-nav">
-                <button id="obsConfigButton" class="btn secondary-btn"><i class="fas fa-cog"></i> OBS Config</button>
-            </nav>
-            <h1><i class="fas fa-video"></i> GamePlay</h1>
-            <p class="tagline">Capture. Edit. Share Your Epic Moments.</p>
-        </header>
-
-        <div id="controls" class="controls-section">
-            <button id="connectButton" class="btn primary-btn small-btn"><i class="fas fa-link"></i> Connect to OBS</button>
-            <button id="startReplayBufferButton" class="btn primary-btn small-btn"><i class="fas fa-play-circle"></i> Start Replay Buffer</button>
-            <button id="startDetectionButton" class="btn success-btn small-btn"><i class="fas fa-bullseye"></i> Start Event Detection</button>
-            <button id="stopDetectionButton" class="btn danger-btn small-btn"><i class="fas fa-stop-circle"></i> Stop Event Detection</button>
-            <button id="editVideoButton" class="btn primary-btn small-btn"><i class="fas fa-edit"></i> Compile Highlights</button>
+    <header>
+        <h1>OBS Highlight Test App</h1>
+    </header>
+    <main>
+        <div class="controls">
+            <button id="connectOBSButton">Connect to OBS</button>
+            <button id="startReplayBufferButton">Start Replay Buffer</button>
+            <button id="saveReplayBufferButton">Save Replay Buffer</button>
+            <button id="obsConfigButton">OBS Config</button>
+            <button id="startGameButton">Start Game</button>
+            <button id="endGameButton">End Game</button>
+            <button id="validateClipsButton">Validate Clips</button>
+            <button id="montageifyButton">Montageify Clips</button>
+        </div>            
+        <div id="logSection" class="log-section">
+            <h2>Session Logs</h2>
+            <textarea id="logOutput" readonly></textarea>
         </div>
-
-        <div id="statusSection" class="status-section">
-            <h2><i class="fas fa-info-circle"></i> Status Logs</h2>
-            <textarea id="logOutput" readonly class="log-output"></textarea>
+        <div id="clipsPreview" class="clips-preview">
+            <h2>Clips Preview</h2>
+            <div id="clipsContainer"></div>
         </div>
-
-        <div id="clipsSection" class="clips-section">
-            <h2><i class="fas fa-film"></i> Saved Clips</h2>
-            <div id="clipsContainer" class="clips-container">
-            </div>
-        </div>
-    </div>
-
+    </main>
     <div id="configModal" class="modal">
         <div class="modal-content">
-            <span id="closeConfigModal" class="close-btn">&times;</span>
-            <h3><i class="fas fa-cog"></i> OBS Configuration</h3>
-            <div class="config-form">
-                <label for="obsHost">OBS Host:</label>
-                <input type="text" id="obsHost" placeholder="localhost" class="input-field">
-                <label for="obsPort">OBS Port:</label>
-                <input type="text" id="obsPort" placeholder="4455" class="input-field">
-                <label for="obsPassword">Password:</label>
-                <input type="password" id="obsPassword" placeholder="Password" class="input-field">
-
-                <label for="triggerPhrases">Trigger Phrases (comma-separated):</label>
-                <textarea id="triggerPhrases" class="input-field" rows="4" placeholder="Enter trigger phrases..."></textarea>
-
-                <label for="saveLocation">Save Location:</label>
-                <input type="text" id="saveLocation" readonly class="input-field">
-                <button id="chooseSaveLocation" class="btn secondary-btn"><i class="fas fa-folder-open"></i> Choose Folder</button>
-
-                <button id="saveConfigButton" class="btn secondary-btn"><i class="fas fa-save"></i> Save Configuration</button>
-            </div>
+            <span id="closeModal" class="close-btn">&times;</span>
+            <h2>OBS Configuration</h2>
+            <label for="obsHost">OBS Host:</label>
+            <input type="text" id="obsHost" placeholder="localhost">
+            <label for="obsPort">OBS Port:</label>
+            <input type="number" id="obsPort" placeholder="4455">
+            <label for="obsPassword">OBS Password:</label>
+            <input type="password" id="obsPassword">
+            <button id="saveConfigButton">Save Configuration</button>
         </div>
     </div>
-
-    <footer>
-        <p>&copy; 2024 GamePlay. All Rights Reserved.</p>
-    </footer>
-
     <script src="renderer.js"></script>
 </body>
 </html>
