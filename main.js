@@ -47,6 +47,36 @@ async function connectToOBS() {
     }
 }
 
+async function generateMontage() {
+    try {
+        const files = fs.readdirSync(clipsDirectory).filter(file =>
+            file.startsWith(`session_${currentSessionId}_clip_`) && file.endsWith('.mp4')
+        );
+
+        if (files.length === 0) {
+            mainWindow.webContents.send('log', 'No clips found for the current session.');
+            return;
+        }
+
+        const listFilePath = path.join(clipsDirectory, 'file_list.txt');
+        const fileList = files.map(file => `file '${path.join(clipsDirectory, file)}'`).join('\n');
+        fs.writeFileSync(listFilePath, fileList);
+
+        const outputPath = path.join(clipsDirectory, `montage_${currentSessionId}.mp4`);
+        const ffmpegCommand = `ffmpeg -f concat -safe 0 -i "${listFilePath}" -c:v copy -c:a aac "${outputPath}"`;
+
+        exec(ffmpegCommand, (error) => {
+            if (error) {
+                mainWindow.webContents.send('log', `Error creating montage: ${error.message}`);
+                return;
+            }
+            mainWindow.webContents.send('log', `Montage created successfully: ${outputPath}`);
+        });
+    } catch (error) {
+        mainWindow.webContents.send('log', `Error during montage creation: ${error.message}`);
+    }
+}
+
 // Start the replay buffer
 async function startReplayBuffer() {
     if (!isConnectedToOBS) {
@@ -66,6 +96,9 @@ async function startReplayBuffer() {
     }
 }
 
+const { v4: uuidv4 } = require('uuid'); // Ensure uuid is installed
+let currentSessionId = uuidv4(); // Initialize session ID
+
 // Save the replay buffer
 async function saveReplayBuffer() {
     if (!isConnectedToOBS) {
@@ -73,12 +106,16 @@ async function saveReplayBuffer() {
         return;
     }
     try {
-        const result = await obsClient.call('SaveReplayBuffer');
-        console.log('Replay buffer save result:', result);
-        mainWindow.webContents.send('log', `Replay buffer saved: ${JSON.stringify(result)}`);
+        const timestamp = new Date().toISOString().replace(/[-:.]/g, '_');
+        const clipName = `session_${currentSessionId}_clip_${timestamp}.mp4`;
+        const outputPath = path.join(clipsDirectory, clipName);
+
+        await obsClient.call('SaveReplayBuffer');
+        mainWindow.webContents.send('log', `Replay buffer saved as ${clipName}`);
+        return outputPath;
     } catch (error) {
         console.error('Failed to save replay buffer:', error.message);
-        mainWindow.webContents.send('log', `Failed to save replay buffer: ${error.message}`);
+        mainWindow.webContents.send('log', `Error saving replay buffer: ${error.message}`);
     }
 }
 
@@ -167,6 +204,14 @@ ipcMain.handle('montageifyClips', async () => {
 });
 
 // IPC Handlers
+
+ipcMain.handle('generateMontage', generateMontage);
+
+ipcMain.handle('startNewSession', () => {
+    currentSessionId = uuidv4(); // Generate a new session ID
+    mainWindow.webContents.send('log', `New session started with ID: ${currentSessionId}`);
+});
+
 ipcMain.handle('saveConfig', (_, newConfig) => {
     Object.assign(config, newConfig);
     console.log('Configuration updated:', config);
