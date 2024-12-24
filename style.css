@@ -3,77 +3,117 @@ body {
     background-color: #121212;
     color: white;
     margin: 0;
-    padding: 20px;
+    padding: 0;
 }
 
 header {
     text-align: center;
-    margin-bottom: 20px;
+    padding: 20px;
 }
 
-main {
-    text-align: center;
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.button-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
 }
 
 button {
-    display: inline-block;
-    margin: 10px;
-    padding: 10px 20px;
+    padding: 8px 12px;
+    font-size: 14px;
     background-color: #007bff;
-    border: none;
     color: white;
-    font-size: 16px;
-    cursor: pointer;
+    border: none;
     border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
 }
 
 button:hover {
     background-color: #0056b3;
 }
 
-#logContainer {
-    margin-top: 20px;
-    background-color: #333;
-    padding: 10px;
-    border-radius: 5px;
-    max-height: 200px;
-    overflow-y: auto;
-}
-#logOutput {
-    width: 98%;
-    height: 400px; /* Increased height */
-    padding: 10px;
-    border: 1px solid #777;
-    border-radius: 5px;
-    resize: none;
-    background-color: #444;
-    color: #e0e0e0;
-    overflow-y: auto;
-}
-.clips-preview {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px; /* Space between thumbnails */
-    justify-content: center;
-    padding: 10px;
-    background-color: #333; /* Optional background for clarity */
-    border-radius: 5px;
+.log-section {
+    text-align: center;
+    margin: 20px;
 }
 
-.clip {
-    width: 150px; /* Adjust thumbnail size */
+textarea {
+    width: 80%;
+    height: 150px;
+    margin: 10px auto;
+    display: block;
+    background-color: #333;
+    color: white;
+    border: 1px solid #555;
+    border-radius: 5px;
+    padding: 10px;
+    font-family: monospace;
+}
+
+.clips-preview {
+    margin: 20px;
     text-align: center;
 }
 
-.clip video {
-    width: 100%; /* Ensure the video fits within the clip container */
-    height: auto; /* Maintain aspect ratio */
-    border: 1px solid #555; /* Optional border for visibility */
-    border-radius: 5px; /* Rounded corners */
+.clips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
 }
 
-.clip p {
-    margin-top: 5px;
-    font-size: 14px; /* Smaller text for labels */
-    color: #ddd; /* Text color for better visibility */
+.clips-grid div {
+    background-color: #333;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.clips-grid video {
+    width: 100%;
+    border-radius: 5px;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.8);
+    padding-top: 50px;
+}
+
+.modal-content {
+    background-color: #444;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 10px;
+    color: white;
+}
+
+.close-btn {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-btn:hover {
+    color: white;
 }
