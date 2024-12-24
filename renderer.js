@@ -10,8 +10,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const updateClipsPreview = async () => {
         try {
             const clips = await window.electronAPI.getClipList();
-            clipsContainer.innerHTML = ''; // Clear current clips preview
-
+            clipsContainer.innerHTML = '';
             clips.forEach(clip => {
                 const clipElement = document.createElement('div');
                 clipElement.classList.add('clip');
@@ -19,13 +18,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 const videoElement = document.createElement('video');
                 videoElement.src = `./clips/${clip}`;
                 videoElement.controls = true;
-                videoElement.style.width = '100%';
-
-                const label = document.createElement('p');
-                label.textContent = clip;
-
                 clipElement.appendChild(videoElement);
-                clipElement.appendChild(label);
                 clipsContainer.appendChild(clipElement);
             });
         } catch (error) {
@@ -33,6 +26,26 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // Modal Logic
+    const configModal = document.getElementById('configModal');
+    const obsConfigButton = document.getElementById('obsConfigButton');
+    const closeModal = document.getElementById('closeModal');
+
+    obsConfigButton.addEventListener('click', () => {
+        configModal.style.display = 'block';
+    });
+
+    closeModal.addEventListener('click', () => {
+        configModal.style.display = 'none';
+    });
+
+    window.onclick = (event) => {
+        if (event.target === configModal) {
+            configModal.style.display = 'none';
+        }
+    };
+
+    // Other button event listeners...
     document.getElementById('connectOBSButton').addEventListener('click', async () => {
         await window.electronAPI.connectOBS();
         appendLog('Attempting to connect to OBS...');
@@ -65,7 +78,16 @@ window.addEventListener('DOMContentLoaded', () => {
         await updateClipsPreview();
     });
 
-    // Initial update of the clips preview
+    document.getElementById('startNewSessionButton').addEventListener('click', async () => {
+        await window.electronAPI.startNewSession();
+        appendLog('New session started.');
+    });
+
+    document.getElementById('generateMontageButton').addEventListener('click', async () => {
+        await window.electronAPI.generateMontage();
+        appendLog('Generating montage...');
+    });
+
     updateClipsPreview();
 
     window.electronAPI.onLog((message) => {
