@@ -10,11 +10,10 @@ class TriggerDetection extends EventEmitter {
         super();
         this.triggerPhrases = triggerPhrases.map(phrase => phrase.toLowerCase());
         this.running = false;
-        this.outputDir = path.join(__dirname, 'output'); // Directory for saving matched images
-        this.detectionTimeout = false; // Timeout flag to prevent multiple detections within 7 seconds
-        this.lastDetectedEvent = null; // Tracks the last detected event (phrase, time, position)
+        this.outputDir = path.join(__dirname, 'output'); 
+        this.detectionTimeout = false; 
+        this.lastDetectedEvent = null; 
 
-        // Ensure the output directory exists
         if (!fs.existsSync(this.outputDir)) {
             fs.mkdirSync(this.outputDir);
         }
@@ -36,7 +35,7 @@ class TriggerDetection extends EventEmitter {
     async detectTriggers() {
         while (this.running) {
             if (this.detectionTimeout) {
-                await this.sleep(1000); // Wait 1 second before checking again
+                await this.sleep(1000);
                 continue;
             }
 
@@ -47,7 +46,7 @@ class TriggerDetection extends EventEmitter {
             } catch (error) {
                 console.error('Error in trigger detection:', error.message);
             }
-            await this.sleep(1000); // Pause for 1 second between captures
+            await this.sleep(1000); 
         }
     }
 
@@ -56,17 +55,15 @@ class TriggerDetection extends EventEmitter {
             const imgBuffer = await screenshot({ format: 'png' });
             const image = await Jimp.read(imgBuffer);
 
-            // Original or known-good ROI settings
             const width = image.bitmap.width;
             const height = image.bitmap.height;
-            const centerWidth = width * 0.5; // Adjust based on your original settings
-            const centerHeight = height * 0.2; // Adjust based on your original settings
+            const centerWidth = width * 0.5; 
+            const centerHeight = height * 0.2; 
             const centerX = (width - centerWidth) / 2;
             const centerY = (height - centerHeight) / 2 + centerHeight;
 
             image.crop(centerX, centerY, centerWidth, centerHeight);
 
-            // Debug log to ensure ROI is accurate
             console.log(`Cropped region: CenterX=${centerX}, CenterY=${centerY}, Width=${centerWidth}, Height=${centerHeight}`);
 
             return image;
@@ -81,13 +78,12 @@ class TriggerDetection extends EventEmitter {
             const buffer = await image.getBufferAsync(Jimp.MIME_PNG);
             const { data } = await tesseract.recognize(buffer);
 
-            // Log OCR-detected words for debugging
             console.log("OCR Detected Words:", data.words);
 
             const words = data.words.map(word => ({
                 text: word.text.toLowerCase(),
-                x: word.bbox ? word.bbox.x0 : null, // Check for bounding box existence
-                y: word.bbox ? word.bbox.y0 : null, // Check for bounding box existence
+                x: word.bbox ? word.bbox.x0 : null, 
+                y: word.bbox ? word.bbox.y0 : null, 
             }));
 
             return words;
@@ -104,22 +100,19 @@ class TriggerDetection extends EventEmitter {
 
                 const currentTime = Date.now();
 
-                // Check if this is a duplicate detection within the timeout
                 if (this.lastDetectedEvent) {
                     const { text, time, y } = this.lastDetectedEvent;
 
-                    // Ignore duplicate detections with small vertical differences
                     if (
-                        text === word.text && // Same text
-                        Math.abs(word.y - y) < 50 && // Vertical difference threshold
-                        currentTime - time < 3000 // Timeout threshold (3 seconds)
+                        text === word.text && 
+                        Math.abs(word.y - y) < 50 && 
+                        currentTime - time < 3000 
                     ) {
                         console.log(`Ignored duplicate detection of '${word.text}' at similar vertical position.`);
                         return;
                     }
                 }
 
-                // Save clip and update last event
                 this.saveClip(image, word.text);
                 this.lastDetectedEvent = { text: word.text, time: currentTime, y: word.y };
                 this.startDetectionTimeout();
@@ -140,12 +133,12 @@ class TriggerDetection extends EventEmitter {
     }
 
     startDetectionTimeout() {
-        this.detectionTimeout = true; // Set timeout flag
+        this.detectionTimeout = true; 
         setTimeout(() => {
-            this.detectionTimeout = false; // Clear timeout after 7 seconds
-            this.lastDetectedEvent = null; // Reset last detected event
+            this.detectionTimeout = false; 
+            this.lastDetectedEvent = null; 
             console.log('Detection timeout cleared.');
-        }, 7000); // 7 seconds
+        }, 7000); 
     }
 
     sleep(ms) {
