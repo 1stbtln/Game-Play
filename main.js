@@ -3,12 +3,12 @@ const path = require('path');
 const OBSWebSocket = require('obs-websocket-js').OBSWebSocket;
 const fs = require('fs');
 const { exec } = require('child_process');
-const TriggerDetection = require('./triggerDetection'); // Import OCR detection logic
+const TriggerDetection = require('./triggerDetection'); 
 
 let mainWindow;
-let obsClient = null; // OBS WebSocket client
+let obsClient = null; 
 let isConnectedToOBS = false;
-let triggerDetection = null; // Instance of TriggerDetection for OCR
+let triggerDetection = null; 
 
 const config = {
     obsHost: 'localhost',
@@ -18,7 +18,6 @@ const config = {
 
 const clipsDirectory = path.join(__dirname, 'clips');
 
-// Create the main application window
 function createMainWindow() {
     mainWindow = new BrowserWindow({
         width: 800,
@@ -32,7 +31,6 @@ function createMainWindow() {
     mainWindow.loadFile(path.join(__dirname, 'index.html'));
 }
 
-// Connect to OBS
 async function connectToOBS() {
     try {
         if (!obsClient) obsClient = new OBSWebSocket();
@@ -77,7 +75,6 @@ async function generateMontage() {
     }
 }
 
-// Start the replay buffer
 async function startReplayBuffer() {
     if (!isConnectedToOBS) {
         mainWindow.webContents.send('log', 'OBS not connected. Cannot start replay buffer.');
@@ -96,10 +93,9 @@ async function startReplayBuffer() {
     }
 }
 
-const { v4: uuidv4 } = require('uuid'); // Ensure uuid is installed
-let currentSessionId = uuidv4(); // Initialize session ID
+const { v4: uuidv4 } = require('uuid');
+let currentSessionId = uuidv4(); 
 
-// Save the replay buffer
 async function saveReplayBuffer() {
     if (!isConnectedToOBS) {
         mainWindow.webContents.send('log', 'OBS not connected. Cannot save replay buffer.');
@@ -119,7 +115,6 @@ async function saveReplayBuffer() {
     }
 }
 
-// Start OCR and trigger detection
 function startTriggerDetection() {
     const triggerPhrases = ['you', 'knocked', 'out', 'knock', 'ou'];
     if (!triggerDetection) {
@@ -128,7 +123,7 @@ function startTriggerDetection() {
             mainWindow.webContents.send('log', `Trigger detected: "${phrase}". Preparing to save replay buffer...`);
             console.log('Trigger detected. Saving replay buffer...');
 
-            await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
+            await new Promise(resolve => setTimeout(resolve, 500)); 
             await saveReplayBuffer();
 
             console.log('Replay buffer saved after detection.');
@@ -141,7 +136,6 @@ function startTriggerDetection() {
     }
 }
 
-// Stop OCR and trigger detection
 function stopTriggerDetection() {
     if (triggerDetection) {
         triggerDetection.stop();
@@ -153,7 +147,6 @@ function stopTriggerDetection() {
     }
 }
 
-// Montageify clips
 ipcMain.handle('montageifyClips', async () => {
     try {
         const files = fs.readdirSync(clipsDirectory).filter(file => file.endsWith('.mp4') || file.endsWith('.mkv'));
@@ -163,18 +156,15 @@ ipcMain.handle('montageifyClips', async () => {
             return;
         }
 
-        // Generate the input file list for FFmpeg
         const listFilePath = path.join(clipsDirectory, 'file_list.txt');
         const fileList = files.map(file => `file '${path.join(clipsDirectory, file)}'`).join('\n');
 
-        // Write to file_list.txt
         fs.writeFileSync(listFilePath, fileList);
         console.log(`Created list file at: ${listFilePath}`);
 
         const outputFilePath = path.join(clipsDirectory, 'montage.mp4');
         const audioFilePath = path.join(clipsDirectory, 'assets', 'Martial.mp3');
 
-        // FFmpeg command to concatenate clips and add audio
         const ffmpegCommand = `ffmpeg -f concat -safe 0 -i "${listFilePath}" -i "${audioFilePath}" -map 0:v:0 -map 1:a:0 -shortest -c:v copy -c:a aac "${outputFilePath}"`;
 
         console.log('Executing FFmpeg command:', ffmpegCommand);
@@ -203,12 +193,11 @@ ipcMain.handle('montageifyClips', async () => {
     }
 });
 
-// IPC Handlers
 
 ipcMain.handle('generateMontage', generateMontage);
 
 ipcMain.handle('startNewSession', () => {
-    currentSessionId = uuidv4(); // Generate a new session ID
+    currentSessionId = uuidv4(); 
     mainWindow.webContents.send('log', `New session started with ID: ${currentSessionId}`);
 });
 
