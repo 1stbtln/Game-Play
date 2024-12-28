@@ -26,7 +26,6 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Modal Logic
     const configModal = document.getElementById('configModal');
     const obsConfigButton = document.getElementById('obsConfigButton');
     const closeModal = document.getElementById('closeModal');
@@ -45,7 +44,6 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Other button event listeners...
     document.getElementById('connectOBSButton').addEventListener('click', async () => {
         await window.electronAPI.connectOBS();
         appendLog('Attempting to connect to OBS...');
