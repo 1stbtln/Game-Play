@@ -63,17 +63,6 @@ This **automated tracking system** ensures that each game's clips remain grouped
 
 ---
 
-## **Return on Investment (ROI) for Users**
-
-GamePlay provides significant value for streamers and content creators:
-
-- **Time-Saving**: Reduces post-game editing time by automating the highlight creation process. Users can get a shareable montage within **30 seconds** of game completion.
-- **Increased Engagement**: High-quality, ready-to-share montages keep audiences engaged and increase visibility on platforms like YouTube, Twitch, and TikTok.
-- **Cost Efficiency**: Eliminates the need for expensive video editing tools or outsourcing.
-- **Ease of Use**: Minimal setup ensures even non-tech-savvy users can generate professional-looking content effortlessly.
-
----
-
 ## **Prerequisites**
 Before using GamePlay, ensure you have the following:
 - **Windows** OS (currently only supported platform)
