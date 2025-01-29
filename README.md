@@ -99,14 +99,14 @@ Before using GamePlay, ensure you have the following:
 ## **Future Plans**
 - **Expanded Game Support** – Support for other battle royale or PvP games.
 - **Advanced Editing Features** – Transitions, overlays, and customizable templates.
-- **Cloud Storage & Sharing** – Direct upload to platforms like YouTube or Discord.
+- **Built-in Replay Buffer** – Develop an integrated replay buffer system to make GamePlay a fully standalone application, eliminating the need for OBS Studio's replay buffer dependency.
 
 ---
 
 ## **Support**
-If you encounter any issues, feel free to contact us via **[support@yourwebsite.com](mailto:support@yourwebsite.com)** or create an issue in the repository (if open-sourced).
+If you encounter any issues, feel free to contact me via **[ewag57dev@gmail.com](mailto:support@yourwebsite.com)** or create an issue in the repository (if open-sourced).
 
 ---
 
 ## **License**
-GamePlay is a proprietary application developed by **Edworks**. All rights reserved.
+GamePlay is a proprietary application developed by **Edworxs**. All rights reserved.
