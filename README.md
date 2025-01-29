@@ -89,10 +89,11 @@ Before using GamePlay, ensure you have the following:
 
 ## **Usage**
 - Launch the GamePlay application.
+- Connect to OBS Studio.
+- Start Replay Buffer.
+- Start Trigger Detection.
 - Play a game of **PUBG: BATTLEGROUNDS**.
-- After the match, the app will generate a highlight montage automatically.
-- Edit or rearrange clips (optional).
-- Save and share your montage!
+- Click "Generate Montage"
 
 ---
 
