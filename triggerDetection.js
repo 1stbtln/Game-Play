@@ -8,7 +8,6 @@ const OBSWebSocket = require('obs-websocket-js').OBSWebSocket;
 const ValidationMapping = require('./utils/validationMapping');
 const SessionCounter = require('./utils/sessionCounter');
 
-// Predefined trigger phrases for detection
 const PRIMARY_TRIGGER_PHRASES = [
     'YOU',
     'OU',
@@ -32,8 +31,8 @@ class TriggerDetection extends EventEmitter {
         this.running = false;
         this.outputDir = path.join(__dirname, 'validationPhotos');
         this.detectionTimeout = false;
-        this.secondaryTimeout = false;  // Add new timeout flag for second ROI
-        this.checkingSecondaryROI = false;  // Flag to track which ROI we're checking
+        this.secondaryTimeout = false;
+        this.checkingSecondaryROI = false;
         this.sessionsPath = path.join(__dirname, 'config', 'sessions.json');
 
         this.obs = new OBSWebSocket();
@@ -45,7 +44,7 @@ class TriggerDetection extends EventEmitter {
         this.clipOutputDir = path.join(__dirname, 'clips');
         this.sessionCounter = new SessionCounter();
         this.currentSessionId = null;
-        this.lastPrimaryClip = null; // Add this new property
+        this.lastPrimaryClip = null;
 
         if (!fs.existsSync(this.outputDir)) {
             fs.mkdirSync(this.outputDir);
@@ -54,13 +53,11 @@ class TriggerDetection extends EventEmitter {
             fs.mkdirSync(this.clipOutputDir);
         }
 
-        // Ensure validation photos directory exists
         this.validationPhotosDir = path.join(__dirname, 'validationPhotos');
         if (!fs.existsSync(this.validationPhotosDir)) {
             fs.mkdirSync(this.validationPhotosDir, { recursive: true });
         }
 
-        // Read current session ID on initialization
         try {
             const sessionsData = JSON.parse(fs.readFileSync(this.sessionsPath, 'utf-8'));
             const currentSession = sessionsData.sessions.find(session => !session.endTime);
@@ -98,14 +95,11 @@ class TriggerDetection extends EventEmitter {
         console.log(`[${new Date().toISOString()}] Initiating replay save...`);
     
         try {
-            // Trigger OBS replay save
             await this.obs.call('SaveReplayBuffer');
             this.lastSaveTime = Date.now();
             
-            // Initial delay to allow file creation
             await new Promise(resolve => setTimeout(resolve, 1000));
     
-            // Retry loop
             for (let attempt = 0; attempt < 3; attempt++) {
                 const files = fs.readdirSync(this.clipOutputDir);
                 const newFile = files
@@ -123,7 +117,6 @@ class TriggerDetection extends EventEmitter {
                     return { success: true, clipPath };
                 }
     
-                // Wait before next attempt
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
     
@@ -137,7 +130,6 @@ class TriggerDetection extends EventEmitter {
     start() {
         if (!this.running) {
             if (!this.currentSessionId) {
-                // Try to get current session ID again if not set
                 const sessionsData = JSON.parse(fs.readFileSync(this.sessionsPath, 'utf-8'));
                 const currentSession = sessionsData.sessions.find(session => !session.endTime);
                 this.currentSessionId = currentSession ? currentSession.id : null;
@@ -159,7 +151,6 @@ class TriggerDetection extends EventEmitter {
     async detectTriggers() {
         while (this.running) {
             try {
-                // Single OCR instance that checks current ROI
                 const frame = await this.captureScreen();
                 const ocrResult = await this.runOCR(frame);
                 
@@ -169,7 +160,7 @@ class TriggerDetection extends EventEmitter {
             } catch (error) {
                 console.error('Detection error:', error);
             }
-            await this.sleep(500); // Changed from 700ms to 500ms
+            await this.sleep(500);
         }
     }
 
@@ -178,11 +169,9 @@ class TriggerDetection extends EventEmitter {
             const imgBuffer = await screenshot({ format: 'png' });
             const image = await Jimp.read(Buffer.from(imgBuffer));
     
-            // Dynamically calculate screen dimensions
             const screenHeight = image.getHeight();
             const screenWidth = image.getWidth();
     
-            // Define ROI dimensions and position
             const primaryRoiHeight = Math.floor(screenHeight * (43 / 1073));
             const roiWidth = Math.floor(screenWidth * 0.6);
             const roiX = Math.floor((screenWidth - roiWidth) / 2);
@@ -196,7 +185,6 @@ class TriggerDetection extends EventEmitter {
                 roiY = Math.floor(screenHeight * (0.85 - 0.18));
             }
     
-            // Just crop to ROI without any enhancements
             return image.crop(roiX, roiY, roiWidth, roiHeight);
         } catch (error) {
             console.error('Screen capture error details:', error);
@@ -209,7 +197,6 @@ class TriggerDetection extends EventEmitter {
             const buffer = await image.getBufferAsync(Jimp.MIME_PNG);
             const { data } = await tesseract.recognize(buffer);
             
-            // Combine all text into a single string and normalize
             return {
                 text: data.text.toUpperCase().replace(/\s+/g, ' ').trim(),
                 words: data.words
@@ -235,7 +222,6 @@ class TriggerDetection extends EventEmitter {
                     let replaySaveResult = null;
 
                     if (!this.checkingSecondaryROI) {
-                        // Primary ROI detection
                         replaySaveResult = await this.saveReplayBuffer();
                         if (replaySaveResult.success) {
                             this.lastPrimaryClip = replaySaveResult.clipPath;
@@ -254,7 +240,6 @@ class TriggerDetection extends EventEmitter {
                         }, 7000);
                         
                     } else {
-                        // Secondary ROI detection - delete primary clip first
                         if (this.lastPrimaryClip) {
                             try {
                                 console.log('Attempting to delete primary clip:', this.lastPrimaryClip);
@@ -262,14 +247,11 @@ class TriggerDetection extends EventEmitter {
                                 if (fs.existsSync(this.lastPrimaryClip)) {
                                     await new Promise(resolve => setTimeout(resolve, 500));
                                     
-                                    // Get validation photo path before deleting clip
                                     const validationPath = await this.validationMapping.removeMapping(this.lastPrimaryClip);
                                     
-                                    // Delete the clip
                                     await fs.promises.unlink(this.lastPrimaryClip);
                                     console.log('Successfully deleted primary clip');
                                     
-                                    // Delete the validation photo if it exists
                                     if (validationPath && fs.existsSync(validationPath)) {
                                         await fs.promises.unlink(validationPath);
                                         console.log('Successfully deleted associated validation photo:', validationPath);
@@ -282,13 +264,11 @@ class TriggerDetection extends EventEmitter {
                             }
                         }
 
-                        // Save secondary clip after short delay
                         await new Promise(resolve => setTimeout(resolve, 1000));
                         replaySaveResult = await this.saveReplayBuffer();
                         
                         this.secondaryTimeout = true;
                         
-                        // Clear all timeouts after 7 seconds
                         setTimeout(() => {
                             this.secondaryTimeout = false;
                             this.detectionTimeout = false;
@@ -329,7 +309,6 @@ class TriggerDetection extends EventEmitter {
     }
 
     async saveValidationImage(image, detectedText, triggerPhrase) {
-        // Make sure we have the most current session ID
         if (!this.currentSessionId) {
             try {
                 const sessionsData = JSON.parse(fs.readFileSync(this.sessionsPath, 'utf-8'));
@@ -354,11 +333,9 @@ class TriggerDetection extends EventEmitter {
         );
 
         try {
-            // Simply save the unmodified image
             await image.clone().writeAsync(outputFilePath);
             console.log(`Saved validation photo: ${outputFilePath}`);
 
-            // Emit validation saved event with metadata
             this.emit('validation-saved', {
                 sessionId: this.currentSessionId,
                 counter: sessionCounter,

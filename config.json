@@ -13,7 +13,7 @@
     "deleteAfterDays": 3,
     "outroPath": "assets/videoAssets/Game-Play.mp4",
     "editorSettings": {
-      "clipVolume": 0,
+      "clipVolume": 70,
       "musicVolume": 30,
       "selectedMusic": "TwinsMusic - Funk It Up.mp3",
       "transitionType": "cut"
