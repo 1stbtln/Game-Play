@@ -24,7 +24,7 @@ Here are some screenshots showcasing GamePlay's interface and functionality.
 _Description: The main dashboard where users can manage clips and create montages._
 
 ### **Clip Management**
-![Clip Management]([path/to/clip_management.png](https://github.com/1stbtln/Game-Play/blob/d27417ff48576c8203b6f1b0603a0f37a845224e/Screenshot%202025-01-28%20205912.png))  
+![](https://github.com/1stbtln/Game-Play/blob/b50a6eb0d598c862b66308c45fed621271e8432d/Screenshot%202025-01-28%20205939.png)  
 _Description: Users can view, rearrange, or delete individual clips in this section._
 
 ### **Exported Montage**
