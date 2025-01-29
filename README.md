@@ -20,7 +20,7 @@ GamePlay is a desktop application built with **Electron** that automates the pro
 Here are some screenshots showcasing GamePlay's interface and functionality.
 
 ### **Main Dashboard**
-![GamePlay Main Dashboard](path/to/dashboard_screenshot.png)  
+![GamePlay Main Dashboard](Screenshot 2025-01-28 205912.png)  
 _Description: The main dashboard where users can manage clips and create montages._
 
 ### **Clip Management**
