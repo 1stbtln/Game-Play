@@ -28,7 +28,7 @@ _Description: The main dashboard where users can manage clips and create montage
 _Description: Users can view, rearrange, or delete individual clips in this section._
 
 ### **Exported Montage**
-![Exported Montage](path/to/exported_montage.png)  
+![](https://github.com/1stbtln/Game-Play/blob/78af12e21dee1f107c5b5417ef6c219bbac51a1d/Screenshot%202025-01-28%20210000.png)  
 _Description: A preview of a completed montage ready for sharing._
 
 ---
