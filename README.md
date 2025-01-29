@@ -74,7 +74,7 @@ Before using GamePlay, ensure you have the following:
 ## **Installation**
 
 1. **Download and Install**
-   - Get the latest release from [Edworks' website](https://yourwebsite.com) (replace with actual link).
+   - Get the latest release from [Game-Play's website](https://www.game-play.gg/)
    - Install the application on your system.
 
 2. **Set Up OBS Studio**
