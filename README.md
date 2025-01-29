@@ -105,9 +105,9 @@ Before using GamePlay, ensure you have the following:
 ---
 
 ## **Support**
-If you encounter any issues, feel free to contact me via **[ewag57dev@gmail.com](mailto:support@yourwebsite.com)** or create an issue in the repository (if open-sourced).
+If you encounter any issues, feel free to contact me via **[ewag57dev@gmail.com]** or create an issue in the repository (if open-sourced).
 
 ---
 
 ## **License**
-GamePlay is a proprietary application developed by **Edworxs**. All rights reserved.
+GamePlay is a proprietary application developed by **Edworx**. All rights reserved.
