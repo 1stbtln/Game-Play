@@ -38,7 +38,7 @@ _Description: A preview of a completed montage ready for sharing._
 GamePlay uses in-game kill notifications from PUBG as **Regions of Interest (ROI)** to determine key highlights. Below are examples of extracted ROIs.
 
 ### **Kill Notification Example**
-![Kill Notification ROI](path/to/kill_notification_roi.png)  
+![](https://github.com/1stbtln/Game-Play/blob/550903b5a2358de2467e3b99722091ea1d96eb6e/vPhoto_d209c078_1_2025-01-23T07-00-54-824Z.png)  
 _Description: An example of an in-game kill notification detected by GamePlay._
 
 ### **Headshot Notification Example**
