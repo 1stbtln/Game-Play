@@ -1,0 +1,22 @@
+{
+  "appIdentity": {
+    "isPremium": false
+  },
+  "obs": {
+    "host": "localhost",
+    "port": 4456,
+    "password": ""
+  },
+  "montage": {
+    "backgroundMusic": "Martial.mp3",
+    "autoDeleteClips": false,
+    "deleteAfterDays": 3,
+    "outroPath": "assets/videoAssets/Game-Play.mp4",
+    "editorSettings": {
+      "clipVolume": 0,
+      "musicVolume": 30,
+      "selectedMusic": "TwinsMusic - Funk It Up.mp3",
+      "transitionType": "cut"
+    }
+  }
+}
