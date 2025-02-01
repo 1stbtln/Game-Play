@@ -2,7 +2,7 @@
 
 GamePlay is a desktop application built with **Electron** that automates the process of creating highlight montages for **PUBG: BATTLEGROUNDS**. By integrating with **OBS Studio's replay buffer**, GamePlay captures in-game moments, applies basic video edits, and allows users to customize their final montage before sharing it. Designed for streamers and content creators, the app ensures fast, efficient, and high-quality highlight generation.
 
-![GamePlay UI Demo](https://github.com/1stbtln/Game-Play/blob/168a06ff518c3e697d83cfa43fd277190ca98eb5/Gameplay%20Demo%20Jif.gif)
+<img src="[your-gif.gif](https://github.com/1stbtln/Game-Play/blob/168a06ff518c3e697d83cfa43fd277190ca98eb5/Gameplay%20Demo%20Jif.gif)" width="100%">
 ---
 
 ## Features
