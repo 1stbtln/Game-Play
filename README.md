@@ -24,7 +24,7 @@ GamePlay is a desktop application built with **Electron** that automates the pro
 _Description: A preview of collected clips before the montage is generated._
 
 ### **Audio Search**
-![Audio Search](https://github.com/1stbtln/Game-Play/blob/b50a6eb0d598c862b66308c45fed621271e8432d/Screenshot%202025-01-28%20205939.png)  
+![Audio Search](https://github.com/1stbtln/Game-Play/blob/98001468e56adcd24cc933560679dc6a3f553ace/Screenshot%202025-02-03%20230032.png)  
 _Description: Users can search and select background music for their montage._
 
 ### **Simple Editor**
