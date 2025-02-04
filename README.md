@@ -28,7 +28,7 @@ _Description: A preview of collected clips before the montage is generated._
 _Description: Users can search and select background music for their montage._
 
 ### **Simple Editor**
-![Simple Editor](https://github.com/1stbtln/Game-Play/blob/78af12e21dee1f107c5b5417ef6c219bbac51a1d/Screenshot%202025-01-28%20210000.png)  
+![Simple Editor](https://github.com/1stbtln/Game-Play/blob/a877e91c38d34f58dbf5c327d37bf48a69140262/Screenshot%202025-02-03%20225829.png)  
 _Description: The basic editor allows users to rearrange, delete, or finalize clips before exporting._
 
 ---
