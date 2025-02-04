@@ -39,9 +39,10 @@ GamePlay uses **Tesseract.js**, an OCR (Optical Character Recognition) library, 
 
 ### **KNOCKOUT Notification Examples**
 ![KNOCKOUT Notification from the ROI's perspective](https://github.com/1stbtln/Game-Play/blob/550903b5a2358de2467e3b99722091ea1d96eb6e/vPhoto_d209c078_1_2025-01-23T07-00-54-824Z.png)  
-_Description: "You Knocked Out" An in-game notification, which the app recognizes as a highlight-worthy event._
 
 ![KNOCKOUT Notification from the ROI's perspective](https://github.com/1stbtln/Game-Play/blob/e4579145902d1386e6535d3cf5cc09a64b72e751/vPhoto_f77fc0c1_1_2025-01-25T01-23-06-041Z.png)  
+
+_Description: "You Knocked Out" An in-game notification, which the app recognizes as a highlight-worthy event._
 
 ---
 
