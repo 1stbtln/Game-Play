@@ -20,7 +20,7 @@ GamePlay is a desktop application built with **Electron** that automates the pro
 ## Screenshots
 
 ### **Clip Preview**
-![Clip Preview](https://github.com/1stbtln/Game-Play/blob/d27417ff48576c8203b6f1b0603a0f37a845224e/Screenshot%202025-01-28%20205912.png)  
+![Clip Preview](https://github.com/1stbtln/Game-Play/blob/3284a2cf9daa82f4430b139e201c86db0f6c9e4f/Screenshot%202025-02-03%20225712.png)  
 _Description: A preview of collected clips before the montage is generated._
 
 ### **Audio Search**
